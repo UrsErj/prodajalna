@@ -78,8 +78,6 @@ streznik.get('/', function(zahteva, odgovor) {
   }
 })
 
-
-
 // Dodajanje oz. brisanje pesmi iz košarice
 streznik.get('/kosarica/:idPesmi', function(zahteva, odgovor) {
   var idPesmi = parseInt(zahteva.params.idPesmi);
@@ -142,8 +140,13 @@ var pesmiIzRacuna = function(racunId, callback) {
     Track.TrackId IN (SELECT InvoiceLine.TrackId FROM InvoiceLine, Invoice \
     WHERE InvoiceLine.InvoiceId = Invoice.InvoiceId AND Invoice.InvoiceId = " + racunId + ")",
     function(napaka, vrstice) {
-      console.log(vrstice);
-    })
+      //console.log(vrstice);
+      if(!napaka){
+        callback(vrstice[0]);
+      }else{
+        callback(false);
+      }
+    });
 }
 
 // Vrni podrobnosti o stranki iz računa
@@ -151,14 +154,29 @@ var strankaIzRacuna = function(racunId, callback) {
     pb.all("SELECT Customer.* FROM Customer, Invoice \
             WHERE Customer.CustomerId = Invoice.CustomerId AND Invoice.InvoiceId = " + racunId,
     function(napaka, vrstice) {
-      console.log(vrstice);
-    })
+      //console.log(vrstice);
+      if(!napaka){callback(vrstice[0]);}
+      else{callback(false);}
+    });
 }
 
 // Izpis računa v HTML predstavitvi na podlagi podatkov iz baze
 streznik.post('/izpisiRacunBaza', function(zahteva, odgovor) {
-  odgovor.end();
-})
+    var form = new formidable.IncomingForm();
+    form.parse(zahteva, function (napaka1, polja, datoteke) {
+      pesmiIzRacuna(polja.seznamRacunov, function(pesmi){
+        strankaIzRacuna(polja.seznamRacunov, function(stranka){
+          odgovor.setHeader('content-type', 'text/xml');
+          odgovor.render('eslog', {
+          vizualiziraj: true,
+          postavkeRacuna: pesmi,
+          stranka: stranka
+          });
+        });
+       });
+    });
+  //odgovor.redirect('/izpisiRacun/html');
+});
 
 // Izpis računa v HTML predstavitvi ali izvorni XML obliki
 streznik.get('/izpisiRacun/:oblika', function(zahteva, odgovor) {
@@ -224,8 +242,6 @@ streznik.post('/prijava', function(zahteva, odgovor) {
       
       //TODO: add fields and finalize
       stmt.run(polja.FirstName, polja.LastName, polja.Company, polja.Address, polja.City, polja.State, polja.Country, polja.PostalCode, polja.Phone, polja.Fax, polja.Email, 3); 
-
-
 
       stmt.finalize();
     } catch (err) {
