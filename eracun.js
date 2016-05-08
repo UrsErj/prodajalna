@@ -27,6 +27,7 @@ streznik.use(
 );
 var StrankaIzbrana=false;
 var sporociloTxt = "";
+var IzbranaStranka;
 
 var razmerje_usd_eur = 0.877039116;
 
@@ -178,6 +179,13 @@ streznik.post('/izpisiRacunBaza', function(zahteva, odgovor) {
   //odgovor.redirect('/izpisiRacun/html');
 });
 
+
+var podatkiStranke= function(Id, callback) {
+    pb.all("SELECT * FROM Customer WHERE Customer.CustomerId = " + Id, function(napaka, vrstice) {
+      callback(napaka, vrstice);
+    });
+}
+
 // Izpis računa v HTML predstavitvi ali izvorni XML obliki
 streznik.get('/izpisiRacun/:oblika', function(zahteva, odgovor) {
   pesmiIzKosarice(zahteva, function(pesmi) {
@@ -187,19 +195,28 @@ streznik.get('/izpisiRacun/:oblika', function(zahteva, odgovor) {
       odgovor.send("<p>V košarici nimate nobene pesmi, \
         zato računa ni mogoče pripraviti!</p>");
     } else {
-      odgovor.setHeader('content-type', 'text/xml');
-      odgovor.render('eslog', {
-        vizualiziraj: zahteva.params.oblika == 'html' ? true : false,
-        postavkeRacuna: pesmi
-      })  
+      podatkiStranke(IzbranaStranka, function(napaka, stranke){
+        if(napaka){
+          odgovor.end();
+        }
+        else{
+            odgovor.setHeader('content-type', 'text/xml');
+            odgovor.render('eslog', {
+            vizualiziraj: zahteva.params.oblika == 'html' ? true : false,
+            postavkeRacuna: pesmi,
+            stranka: stranke[0]
+          });
+        }
+      });
     }
-  })
-})
+  });
+});
 
 // Privzeto izpiši račun v HTML obliki
 streznik.get('/izpisiRacun', function(zahteva, odgovor) {
-  odgovor.redirect('/izpisiRacun/html')
-})
+  odgovor.redirect('/izpisiRacun/html');
+});
+
 
 // Vrni stranke iz podatkovne baze
 var vrniStranke = function(callback) {
@@ -267,14 +284,13 @@ streznik.get('/prijava', function(zahteva, odgovor) {
     });
 })
 
-
-
-
 // Prikaz nakupovalne košarice za stranko
 streznik.post('/stranka', function(zahteva, odgovor) {
     var form = new formidable.IncomingForm();
     form.parse(zahteva, function (napaka1, polja, datoteke) {
       StrankaIzbrana=true;
+      //zahteva.session.stranka=polja.seznamStrank;
+      IzbranaStranka=polja.seznamStrank;
       odgovor.redirect('/')
     });
 })
