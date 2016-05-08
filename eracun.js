@@ -267,6 +267,9 @@ streznik.get('/prijava', function(zahteva, odgovor) {
     });
 })
 
+
+
+
 // Prikaz nakupovalne košarice za stranko
 streznik.post('/stranka', function(zahteva, odgovor) {
     var form = new formidable.IncomingForm();
