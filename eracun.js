@@ -78,6 +78,8 @@ streznik.get('/', function(zahteva, odgovor) {
   }
 })
 
+
+
 // Dodajanje oz. brisanje pesmi iz košarice
 streznik.get('/kosarica/:idPesmi', function(zahteva, odgovor) {
   var idPesmi = parseInt(zahteva.params.idPesmi);
