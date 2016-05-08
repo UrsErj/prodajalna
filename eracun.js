@@ -26,6 +26,9 @@ streznik.use(
   })
 );
 
+////////////
+var sporociloTxt = "";
+
 var razmerje_usd_eur = 0.877039116;
 
 function davcnaStopnja(izvajalec, zanr) {
@@ -201,6 +204,7 @@ streznik.post('/prijava', function(zahteva, odgovor) {
   
   form.parse(zahteva, function (napaka1, polja, datoteke) {
     var napaka2 = false;
+    //sporociloTxt =polja.FirstName;
     try {
       var stmt = pb.prepare("\
         INSERT INTO Customer \
@@ -208,14 +212,24 @@ streznik.post('/prijava', function(zahteva, odgovor) {
     	  Address, City, State, Country, PostalCode, \
     	  Phone, Fax, Email, SupportRepId) \
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+      
+      //var stmt = pb.prepare("DELETE From Customer Where FirstName = ''");
+      //stmt.run();  
+      
       //TODO: add fields and finalize
-      //stmt.run("", "", "", "", "", "", "", "", "", "", "", 3); 
-      //stmt.finalize();
+      stmt.run(polja.FirstName, polja.LastName, polja.Company, polja.Address, polja.City, polja.State, polja.Country, polja.PostalCode, polja.Phone, polja.Fax, polja.Email, 3); 
+
+      stmt.finalize();
     } catch (err) {
       napaka2 = true;
-    }
-  
-    odgovor.end();
+      }
+      if(napaka2){
+        sporociloTxt = "Prišlo je do napake pri registraciji nove stranke. Prosim preverite vnešene podatke in poskusite znova.";
+      }else{
+        sporociloTxt = "Stranka je bila uspešno registrirana.";
+      }
+    //odgovor.end();
+    odgovor.redirect('/prijava')
   });
 })
 
@@ -223,7 +237,7 @@ streznik.post('/prijava', function(zahteva, odgovor) {
 streznik.get('/prijava', function(zahteva, odgovor) {
   vrniStranke(function(napaka1, stranke) {
       vrniRacune(function(napaka2, racuni) {
-        odgovor.render('prijava', {sporocilo: "", seznamStrank: stranke, seznamRacunov: racuni});  
+        odgovor.render('prijava', {sporocilo: sporociloTxt, seznamStrank: stranke, seznamRacunov: racuni});  
       }) 
     });
 })
